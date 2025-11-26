@@ -1,0 +1,128 @@
+.error-screen {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 1rem;
+}
+
+.error-tips {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+}
+
+.error-tips h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.error-tips ul,
+.error-tips ol {
+  margin: 0;
+  padding-left: 1.5rem;
+  color: #6b7280;
+}
+
+.error-tips li {
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+.alternative-text {
+  margin: 1rem 0 0.5rem 0;
+  font-weight: 500;
+  color: #374151;
+}
+
+.btn-upload-alternative,
+.btn-cleanup {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  margin-top: 0.5rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-upload-alternative:hover,
+.btn-cleanup:hover {
+  background-color: #2563eb;
+}
+
+.btn-cleanup {
+  background-color: #ef4444;
+}
+
+.btn-cleanup:hover {
+  background-color: #dc2626;
+}
+
+/* Error banner styles */
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background-color: #fef2f2;
+  border-left: 4px solid #ef4444;
+  border-radius: 0.25rem;
+  margin: 1rem 0;
+  color: #991b1b;
+}
+
+.error-banner-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.error-banner-message {
+  flex: 1;
+  font-size: 0.875rem;
+}
+
+.error-banner-close {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: #991b1b;
+  cursor: pointer;
+  padding: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s;
+}
+
+.error-banner-close:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .error-screen {
+    margin: 1rem;
+    padding: 0.5rem;
+  }
+
+  .error-tips {
+    padding: 0.75rem;
+  }
+
+  .error-tips h4 {
+    font-size: 0.875rem;
+  }
+
+  .error-tips li {
+    font-size: 0.875rem;
+  }
+}

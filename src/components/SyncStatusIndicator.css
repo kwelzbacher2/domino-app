@@ -1,0 +1,127 @@
+.sync-status-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.sync-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.sync-status-icon {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.sync-status-text {
+  font-weight: 500;
+}
+
+.sync-status-time {
+  color: #666;
+  font-size: 12px;
+}
+
+.sync-status-pending {
+  color: #ff9800;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Status-specific colors */
+.sync-status-synced .sync-status-icon {
+  color: #4caf50;
+}
+
+.sync-status-syncing .sync-status-icon {
+  color: #2196f3;
+  animation: spin 1s linear infinite;
+}
+
+.sync-status-offline .sync-status-icon {
+  color: #ff9800;
+}
+
+.sync-status-error .sync-status-icon {
+  color: #f44336;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sync-button {
+  padding: 6px 16px;
+  background-color: #2196f3;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.sync-button:hover:not(:disabled) {
+  background-color: #1976d2;
+}
+
+.sync-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.sync-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  background-color: #323232;
+  color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  font-size: 14px;
+  z-index: 1000;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .sync-status-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .sync-button {
+    width: 100%;
+  }
+
+  .sync-notification {
+    left: 20px;
+    right: 20px;
+  }
+}

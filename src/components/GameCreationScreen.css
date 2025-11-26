@@ -1,0 +1,214 @@
+.game-creation-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.game-creation-container {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.game-creation-container h1 {
+  margin: 0 0 2rem 0;
+  font-size: 1.75rem;
+  color: #333;
+  text-align: center;
+}
+
+.form-section {
+  margin-bottom: 2rem;
+}
+
+.form-section label {
+  display: block;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.player-count-selector {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.count-button {
+  width: 3rem;
+  height: 3rem;
+  border: 2px solid #667eea;
+  background: white;
+  color: #667eea;
+  font-size: 1.5rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: bold;
+}
+
+.count-button:hover:not(:disabled) {
+  background: #667eea;
+  color: white;
+  transform: scale(1.05);
+}
+
+.count-button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.count-input {
+  width: 4rem;
+  height: 3rem;
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  border: 2px solid #ddd;
+  border-radius: 0.5rem;
+  color: #333;
+}
+
+.count-input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.help-text {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.85rem;
+  color: #888;
+  text-align: center;
+}
+
+.player-names-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.player-name-input-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.player-label {
+  min-width: 5rem;
+  font-weight: 500;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.player-name-input {
+  flex: 1;
+  padding: 0.75rem;
+  border: 2px solid #ddd;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.player-name-input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.player-name-input::placeholder {
+  color: #aaa;
+}
+
+.error-message {
+  background: #fee;
+  color: #c33;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  border: 1px solid #fcc;
+}
+
+.button-group {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.button {
+  flex: 1;
+  padding: 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.button-primary {
+  background: #667eea;
+  color: white;
+}
+
+.button-primary:hover:not(:disabled) {
+  background: #5568d3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.button-secondary {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.button-secondary:hover:not(:disabled) {
+  background: #e0e0e0;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  .game-creation-container {
+    padding: 1.5rem;
+  }
+
+  .game-creation-container h1 {
+    font-size: 1.5rem;
+  }
+
+  .player-name-input-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .player-label {
+    min-width: auto;
+  }
+
+  .button-group {
+    flex-direction: column;
+  }
+}
+
+/* Touch-friendly sizing for mobile */
+@media (hover: none) and (pointer: coarse) {
+  .count-button,
+  .count-input,
+  .player-name-input,
+  .button {
+    min-height: 44px;
+  }
+}
