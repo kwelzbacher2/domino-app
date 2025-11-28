@@ -238,7 +238,14 @@ export const CameraScreen = memo(function CameraScreen({ onCapture, onCancel }: 
             </div>
 
             <div className="camera-tips">
-              <p>💡 <strong>Tips:</strong> Ensure good lighting and all dominoes are visible</p>
+              <h3>📸 Photo Tips for Best Results:</h3>
+              <ul>
+                <li>✅ Line up dominoes in a row (don't overlap)</li>
+                <li>✅ Keep dominoes flat on the table</li>
+                <li>✅ Use good lighting - avoid shadows</li>
+                <li>✅ Hold camera directly above dominoes</li>
+                <li>✅ Make sure all pips are clearly visible</li>
+              </ul>
             </div>
           </div>
         )}

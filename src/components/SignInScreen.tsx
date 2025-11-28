@@ -138,10 +138,10 @@ export function SignInScreen({ onSignIn }: SignInScreenProps) {
 
         <div className="sign-in-info">
           <p className="info-text">
-            Your games will be saved locally and synced to the cloud.
+            💡 <strong>Important:</strong> Use the same username each time to access your saved games!
           </p>
           <p className="info-text">
-            New to the app? Just enter a username to get started!
+            Your games are saved on this device and synced to the cloud.
           </p>
         </div>
       </div>

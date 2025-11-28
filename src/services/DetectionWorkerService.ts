@@ -18,7 +18,8 @@ class DetectionWorkerService {
   private worker: Worker | null = null;
   private pendingRequests = new Map<string, PendingRequest>();
   private requestCounter = 0;
-  private workerSupported = typeof Worker !== 'undefined';
+  // Disable Web Workers for now due to Image constructor not being available in workers
+  private workerSupported = false;
 
   /**
    * Initialize the Web Worker

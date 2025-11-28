@@ -1,0 +1,40 @@
+#!/bin/bash
+# Deploy CloudFormation infrastructure
+
+STACK_NAME="domino-app-dev"
+TEMPLATE_FILE="infrastructure.yml"
+REGION="us-east-1"
+
+echo "🚀 Deploying CloudFormation stack: $STACK_NAME"
+
+# Prompt for database password
+read -sp "Enter database password (min 8 characters): " DB_PASSWORD
+echo
+
+# Prompt for S3 bucket name
+read -p "Enter S3 bucket name for frontend (must be globally unique): " BUCKET_NAME
+
+# Deploy stack
+aws cloudformation deploy \
+  --template-file $TEMPLATE_FILE \
+  --stack-name $STACK_NAME \
+  --parameter-overrides \
+    Environment=dev \
+    DBPassword=$DB_PASSWORD \
+    FrontendBucketName=$BUCKET_NAME \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --region $REGION
+
+if [ $? -eq 0 ]; then
+  echo "✅ CloudFormation stack deployed successfully!"
+  echo ""
+  echo "📋 Getting stack outputs..."
+  aws cloudformation describe-stacks \
+    --stack-name $STACK_NAME \
+    --region $REGION \
+    --query 'Stacks[0].Outputs' \
+    --output table
+else
+  echo "❌ CloudFormation deployment failed"
+  exit 1
+fi

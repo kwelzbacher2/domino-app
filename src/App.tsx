@@ -14,6 +14,7 @@ import { PlayerSelectionScreen } from './components/PlayerSelectionScreen';
 import { ManualCorrection } from './components/ManualCorrection';
 import { SignInScreen } from './components/SignInScreen';
 import { SettingsScreen } from './components/SettingsScreen';
+import { HelpScreen } from './components/HelpScreen';
 import type { Game, ImageData, DetectionResult } from './models/types';
 import { gameService } from './services/GameService';
 import { detectDominoes, preloadDetectionModel } from './services/DetectionPipeline';
@@ -35,21 +36,29 @@ function App() {
     setIsAuthenticated(true);
   }, []);
 
-  // Show sign-in screen if not authenticated
-  if (!isAuthenticated) {
-    return <SignInScreen onSignIn={handleSignIn} />;
-  }
-
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/games" replace />} />
-        <Route path="/games" element={<GameListRoute />} />
-        <Route path="/games/new" element={<GameCreationRoute />} />
-        <Route path="/games/:gameId" element={<GameDetailRoute />} />
-        <Route path="/games/:gameId/add-round" element={<AddRoundFlow />} />
-        <Route path="/settings" element={<SettingsRoute />} />
-        <Route path="*" element={<Navigate to="/games" replace />} />
+        {/* Public routes - accessible without authentication */}
+        <Route path="/welcome" element={<WelcomeRoute />} />
+        
+        {/* Protected routes - require authentication */}
+        {!isAuthenticated ? (
+          <>
+            <Route path="*" element={<SignInScreen onSignIn={handleSignIn} />} />
+          </>
+        ) : (
+          <>
+            <Route path="/" element={<Navigate to="/games" replace />} />
+            <Route path="/games" element={<GameListRoute />} />
+            <Route path="/games/new" element={<GameCreationRoute />} />
+            <Route path="/games/:gameId" element={<GameDetailRoute />} />
+            <Route path="/games/:gameId/add-round" element={<AddRoundFlow />} />
+            <Route path="/settings" element={<SettingsRoute />} />
+            <Route path="/help" element={<HelpRoute />} />
+            <Route path="*" element={<Navigate to="/games" replace />} />
+          </>
+        )}
       </Routes>
     </BrowserRouter>
   );
@@ -71,11 +80,16 @@ const GameListRoute = memo(function GameListRoute() {
     navigate('/settings');
   }, [navigate]);
 
+  const handleHelp = useCallback(() => {
+    navigate('/help');
+  }, [navigate]);
+
   return (
     <GameListScreen
       onGameSelect={handleGameSelect}
       onCreateGame={handleCreateGame}
       onSettings={handleSettings}
+      onHelp={handleHelp}
     />
   );
 });
@@ -137,6 +151,28 @@ const SettingsRoute = memo(function SettingsRoute() {
   }, [navigate]);
 
   return <SettingsScreen onBack={handleBack} />;
+});
+
+// Route component for help (authenticated users)
+const HelpRoute = memo(function HelpRoute() {
+  const navigate = useNavigate();
+
+  const handleBack = useCallback(() => {
+    navigate('/games');
+  }, [navigate]);
+
+  return <HelpScreen onBack={handleBack} />;
+});
+
+// Route component for welcome/onboarding (public)
+const WelcomeRoute = memo(function WelcomeRoute() {
+  const navigate = useNavigate();
+
+  const handleGetStarted = useCallback(() => {
+    navigate('/');
+  }, [navigate]);
+
+  return <HelpScreen onGetStarted={handleGetStarted} />;
 });
 
 // Flow component for adding a round (camera → review → detection → correction → player selection)

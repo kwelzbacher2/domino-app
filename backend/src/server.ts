@@ -53,10 +53,14 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`CORS enabled for: ${CORS_ORIGIN}`);
-});
+// Start server (only when running locally, not in Lambda)
+if (process.env.NODE_ENV !== 'production' && !process.env.AWS_LAMBDA_FUNCTION_NAME) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`CORS enabled for: ${CORS_ORIGIN}`);
+  });
+}
 
+// Export app for Lambda
+export { app };
 export default app;

@@ -1,0 +1,72 @@
+service: domino-backend
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1  # Change to your preferred region
+  stage: ${opt:stage, 'dev'}
+  
+  # Use existing CloudFormation stack resources
+  stackName: domino-app-${self:provider.stage}
+  
+  environment:
+    NODE_ENV: ${self:provider.stage}
+    DB_SECRET_ARN: 
+      Fn::ImportValue: ${self:provider.stackName}-DBSecret
+    SENDGRID_API_KEY: ${env:SENDGRID_API_KEY, ''}
+    DEVELOPER_EMAIL: ${env:DEVELOPER_EMAIL, ''}
+    FROM_EMAIL: ${env:FROM_EMAIL, ''}
+  
+  # Use IAM role from CloudFormation
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - secretsmanager:GetSecretValue
+          Resource:
+            Fn::ImportValue: ${self:provider.stackName}-DBSecret
+        - Effect: Allow
+          Action:
+            - rds:DescribeDBInstances
+          Resource: '*'
+
+functions:
+  api:
+    handler: dist/lambda.handler
+    timeout: 30
+    memorySize: 512
+    events:
+      - httpApi:
+          path: /{proxy+}
+          method: ANY
+      - httpApi:
+          path: /
+          method: ANY
+    # Use VPC from CloudFormation
+    vpc:
+      securityGroupIds:
+        - Fn::ImportValue: ${self:provider.stackName}-LambdaSG
+      subnetIds:
+        - Fn::ImportValue: ${self:provider.stackName}-PrivateSubnet1
+        - Fn::ImportValue: ${self:provider.stackName}-PrivateSubnet2
+
+plugins:
+  - serverless-offline
+  - serverless-dotenv-plugin
+
+# Package configuration
+package:
+  patterns:
+    - '!node_modules/**'
+    - '!src/**'
+    - '!.env*'
+    - '!*.md'
+    - 'dist/**'
+
+custom:
+  serverless-offline:
+    httpPort: 3001
+    lambdaPort: 3002

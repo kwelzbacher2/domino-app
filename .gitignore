@@ -12,6 +12,27 @@ dist
 dist-ssr
 *.local
 
+# Environment variables (IMPORTANT - contains secrets!)
+.env
+.env.local
+.env.*.local
+backend/.env
+backend/.env.local
+
+# AWS credentials
+.aws/
+
+# Serverless
+.serverless/
+backend/.serverless/
+
+# Build outputs
+backend/dist/
+
+# Custom model files (large files)
+public/models/custom-domino/*.bin
+public/models/custom-domino/model.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -22,6 +22,7 @@
  * - Can potentially detect pip counts directly (end-to-end solution)
  */
 
+import * as tf from '@tensorflow/tfjs';
 import type { DetectedObject } from '@tensorflow-models/coco-ssd';
 import { modelLoader } from './ModelLoader';
 import { imagePreprocessor } from './ImagePreprocessor';
@@ -32,20 +33,21 @@ import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Aspect ratio range for domino tiles (width/height or height/width)
- * Standard dominoes are roughly 2:1 ratio, but we allow some variance
+ * Standard dominoes are roughly 2:1 ratio, but we allow wide variance for flexibility
  */
-const MIN_DOMINO_ASPECT_RATIO = 1.5;
-const MAX_DOMINO_ASPECT_RATIO = 2.5;
+const MIN_DOMINO_ASPECT_RATIO = 1.2;
+const MAX_DOMINO_ASPECT_RATIO = 4.0;
 
 /**
  * Minimum confidence threshold for object detection
+ * Lower threshold to catch more potential dominoes
  */
-const MIN_DETECTION_CONFIDENCE = 0.3;
+const MIN_DETECTION_CONFIDENCE = 0.15;
 
 /**
  * Minimum size threshold (in pixels) to filter out tiny detections
  */
-const MIN_TILE_SIZE = 20;
+const MIN_TILE_SIZE = 10;
 
 /**
  * DominoDetector service for detecting domino tiles in images
@@ -116,17 +118,26 @@ export class DominoDetector {
    */
   async detectDominoes(imageData: ImageData): Promise<DetectedTile[]> {
     try {
+      console.log('Input image dimensions:', imageData.width, 'x', imageData.height);
+      
       // Ensure model is loaded
       const model = await modelLoader.loadModel();
 
-      // Preprocess image
-      const processed = await imagePreprocessor.preprocessImage(imageData);
+      // Use original image without aggressive resizing
+      // COCO-SSD works better with larger, clearer images
+      const canvas = await imagePreprocessor.getCanvasFromDataUrl(imageData.dataUrl);
+      
+      console.log('Detection canvas dimensions:', canvas.width, 'x', canvas.height);
 
-      // Run object detection
-      const detections = await model.detect(processed.tensor);
+      // Run object detection with higher maxNumBoxes to catch more objects
+      const detections = await model.detect(canvas, 20); // Increased from default 20
 
-      // Clean up tensor
-      processed.tensor.dispose();
+      console.log(`COCO-SSD detected ${detections.length} total objects`);
+      console.log('All detections:', detections.map(d => ({
+        class: d.class,
+        score: d.score.toFixed(2),
+        bbox: d.bbox.map(v => Math.round(v))
+      })));
 
       // Filter detections for domino-shaped objects
       const dominoDetections = detections.filter(
@@ -135,28 +146,18 @@ export class DominoDetector {
           this.isDominoShaped(detection)
       );
 
+      console.log(`Filtered to ${dominoDetections.length} domino-shaped objects`);
+
       // Convert to DetectedTile format
       const tiles = dominoDetections.map((detection) =>
         this.convertToDetectedTile(detection)
       );
 
-      // Scale bounding boxes back to original image dimensions
-      const scaledTiles = tiles.map((tile) => ({
-        ...tile,
-        boundingBox: {
-          ...tile.boundingBox,
-          x: tile.boundingBox.x / processed.scaleFactor,
-          y: tile.boundingBox.y / processed.scaleFactor,
-          width: tile.boundingBox.width / processed.scaleFactor,
-          height: tile.boundingBox.height / processed.scaleFactor,
-        },
-      }));
-
       console.log(
-        `Detected ${scaledTiles.length} domino-shaped objects from ${detections.length} total detections`
+        `Final result: ${tiles.length} domino tiles detected`
       );
 
-      return scaledTiles;
+      return tiles;
     } catch (error) {
       throw new Error(
         `Domino detection failed: ${error instanceof Error ? error.message : 'Unknown error'}`

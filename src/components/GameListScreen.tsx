@@ -12,9 +12,10 @@ interface GameListScreenProps {
   onGameSelect: (gameId: string) => void;
   onCreateGame: () => void;
   onSettings?: () => void;
+  onHelp?: () => void;
 }
 
-export const GameListScreen = memo(function GameListScreen({ onGameSelect, onCreateGame, onSettings }: GameListScreenProps) {
+export const GameListScreen = memo(function GameListScreen({ onGameSelect, onCreateGame, onSettings, onHelp }: GameListScreenProps) {
   const [games, setGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>('');
@@ -67,6 +68,17 @@ export const GameListScreen = memo(function GameListScreen({ onGameSelect, onCre
         <header className="game-list-header">
           <h1>My Games</h1>
           <div className="header-actions">
+            {onHelp && (
+              <button
+                type="button"
+                onClick={onHelp}
+                className="button button-secondary help-button"
+                aria-label="Help"
+                title="How to use"
+              >
+                ❓
+              </button>
+            )}
             {onSettings && (
               <button
                 type="button"

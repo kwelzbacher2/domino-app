@@ -86,9 +86,9 @@ export function SyncStatusIndicator() {
       await loadSyncStatus();
     } catch (error) {
       console.error('Manual sync failed:', error);
-      setNotificationMessage('Sync failed. Please try again.');
+      setNotificationMessage('Running in offline mode. Games saved locally.');
       setShowNotification(true);
-      setTimeout(() => setShowNotification(false), 5000);
+      setTimeout(() => setShowNotification(false), 4000);
     } finally {
       setIsSyncing(false);
     }
@@ -101,30 +101,30 @@ export function SyncStatusIndicator() {
   const getStatusIcon = () => {
     switch (syncStatus.status) {
       case 'synced':
-        return '✓';
+        return '☁️';
       case 'syncing':
         return '↻';
       case 'offline':
-        return '⚠';
+        return '📱';
       case 'error':
-        return '✗';
+        return '📱';
       default:
-        return '?';
+        return '📱';
     }
   };
 
   const getStatusText = () => {
     switch (syncStatus.status) {
       case 'synced':
-        return 'Synced';
+        return 'Cloud Synced';
       case 'syncing':
         return 'Syncing...';
       case 'offline':
-        return 'Offline';
+        return 'Offline Mode';
       case 'error':
-        return 'Sync Error';
+        return 'Offline Mode';
       default:
-        return 'Unknown';
+        return 'Offline Mode';
     }
   };
 

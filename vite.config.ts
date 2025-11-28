@@ -14,6 +14,16 @@ export default defineConfig({
     format: 'es',
   },
   optimizeDeps: {
-    exclude: ['@tensorflow/tfjs', '@tensorflow-models/coco-ssd'],
+    include: ['@tensorflow/tfjs', '@tensorflow-models/coco-ssd'],
+    esbuildOptions: {
+      define: {
+        global: 'globalThis'
+      }
+    }
   },
+  define: {
+    'global': 'globalThis',
+    'process.env': {},
+    'module': {}
+  }
 })
