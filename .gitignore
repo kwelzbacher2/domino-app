@@ -22,6 +22,9 @@ backend/.env.local
 # AWS credentials
 .aws/
 
+# CloudFormation parameters (contains passwords!)
+cloudformation/parameters.json
+
 # Serverless
 .serverless/
 backend/.serverless/

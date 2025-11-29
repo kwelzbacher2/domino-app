@@ -8,9 +8,8 @@ import { imageAnnotator } from './ImageAnnotator';
 import { v4 as uuidv4 } from 'uuid';
 
 const API_KEY = import.meta.env.VITE_ROBOFLOW_API_KEY;
-const MODEL_VERSION = import.meta.env.VITE_ROBOFLOW_MODEL_VERSION || '1';
-const MODEL_NAME = import.meta.env.VITE_ROBOFLOW_MODEL_NAME || 'domino-point-counter-ubn6u';
-const WORKSPACE = import.meta.env.VITE_ROBOFLOW_WORKSPACE || 'ali-amr-656xv';
+const MODEL_VERSION = import.meta.env.VITE_ROBOFLOW_MODEL_VERSION || '2';
+const MODEL_NAME = import.meta.env.VITE_ROBOFLOW_MODEL_NAME || 'my-domino-detector-wgrei';
 
 interface RoboflowPrediction {
   x: number; // center x
@@ -34,8 +33,8 @@ interface RoboflowResponse {
  * Service for detecting domino pips using Roboflow API
  */
 export class RoboflowDetector {
-  // Roboflow Hosted API endpoint format: https://detect.roboflow.com/workspace/model/version
-  private readonly apiUrl = `https://detect.roboflow.com/${MODEL_NAME}/${MODEL_VERSION}`;
+  // Roboflow Serverless API endpoint format: https://serverless.roboflow.com/model/version
+  private readonly apiUrl = `https://serverless.roboflow.com/${MODEL_NAME}/${MODEL_VERSION}`;
 
   /**
    * Call Roboflow API to detect pips
@@ -49,11 +48,11 @@ export class RoboflowDetector {
       // Extract base64 data without the data URL prefix
       const base64Data = imageData.dataUrl.split(',')[1];
 
-      // Call Roboflow Hosted API
-      // Format: POST to https://detect.roboflow.com/project/version?api_key=KEY
+      // Call Roboflow Serverless API
+      // Format: POST to https://serverless.roboflow.com/project/version?api_key=KEY
       const url = `${this.apiUrl}?api_key=${API_KEY}`;
       
-      console.log('Calling Roboflow API:', url.replace(API_KEY, 'HIDDEN'));
+      console.log('Calling Roboflow Serverless API:', url.replace(API_KEY, 'HIDDEN'));
 
       const response = await fetch(url, {
         method: 'POST',
@@ -78,104 +77,6 @@ export class RoboflowDetector {
   }
 
   /**
-   * Group pip detections into domino tiles
-   * Pips that are close together belong to the same domino
-   */
-  private groupPipsIntoDominoes(predictions: RoboflowPrediction[]): DetectedTile[] {
-    if (predictions.length === 0) {
-      return [];
-    }
-
-    // Sort predictions by x coordinate (left to right)
-    const sorted = [...predictions].sort((a, b) => a.x - b.x);
-
-    const tiles: DetectedTile[] = [];
-    const used = new Set<number>();
-
-    // Group pips into pairs (each domino has 2 halves)
-    for (let i = 0; i < sorted.length; i++) {
-      if (used.has(i)) continue;
-
-      const pip1 = sorted[i];
-      let pip2: RoboflowPrediction | null = null;
-      let pip2Index = -1;
-
-      // Find the closest pip to the right
-      const maxDistance = pip1.width * 3; // Pips on same domino should be within 3x width
-      for (let j = i + 1; j < sorted.length; j++) {
-        if (used.has(j)) continue;
-
-        const candidate = sorted[j];
-        const distance = Math.sqrt(
-          Math.pow(candidate.x - pip1.x, 2) + Math.pow(candidate.y - pip1.y, 2)
-        );
-
-        if (distance < maxDistance) {
-          pip2 = candidate;
-          pip2Index = j;
-          break;
-        }
-      }
-
-      // Create a domino tile
-      if (pip2) {
-        used.add(i);
-        used.add(pip2Index);
-
-        // Calculate bounding box that encompasses both pips
-        const minX = Math.min(pip1.x - pip1.width / 2, pip2.x - pip2.width / 2);
-        const maxX = Math.max(pip1.x + pip1.width / 2, pip2.x + pip2.width / 2);
-        const minY = Math.min(pip1.y - pip1.height / 2, pip2.y - pip2.height / 2);
-        const maxY = Math.max(pip1.y + pip1.height / 2, pip2.y + pip2.height / 2);
-
-        const boundingBox: BoundingBox = {
-          x: minX,
-          y: minY,
-          width: maxX - minX,
-          height: maxY - minY,
-          rotation: 0,
-        };
-
-        const leftPips = parseInt(pip1.class);
-        const rightPips = parseInt(pip2.class);
-
-        tiles.push({
-          id: uuidv4(),
-          boundingBox,
-          leftPips,
-          rightPips,
-          totalPips: leftPips + rightPips,
-          confidence: (pip1.confidence + pip2.confidence) / 2,
-        });
-      } else {
-        // Single pip (might be a domino with one half visible)
-        used.add(i);
-
-        const boundingBox: BoundingBox = {
-          x: pip1.x - pip1.width / 2,
-          y: pip1.y - pip1.height / 2,
-          width: pip1.width,
-          height: pip1.height,
-          rotation: 0,
-        };
-
-        const pips = parseInt(pip1.class);
-
-        tiles.push({
-          id: uuidv4(),
-          boundingBox,
-          leftPips: pips,
-          rightPips: 0,
-          totalPips: pips,
-          confidence: pip1.confidence,
-        });
-      }
-    }
-
-    return tiles;
-  }
-
-  /**
    * Detect dominoes and count pips using Roboflow API
    */
   async detectAndAnnotate(imageData: ImageData): Promise<DetectionResult> {
@@ -185,13 +86,41 @@ export class RoboflowDetector {
       // Call Roboflow API
       const response = await this.callRoboflowAPI(imageData);
 
-      console.log(`Roboflow detected ${response.predictions.length} pip values`);
+      console.log(`Roboflow detected ${response.predictions.length} domino halves`);
       console.log('Raw predictions:', response.predictions);
 
-      // Group pips into dominoes
-      const tiles = this.groupPipsIntoDominoes(response.predictions);
+      // Filter by confidence threshold (85% or higher)
+      const CONFIDENCE_THRESHOLD = 0.85;
+      const highConfidencePredictions = response.predictions.filter(
+        pred => pred.confidence >= CONFIDENCE_THRESHOLD
+      );
 
-      console.log(`Grouped into ${tiles.length} domino tiles`);
+      console.log(`Filtered to ${highConfidencePredictions.length} high-confidence detections (>=${CONFIDENCE_THRESHOLD * 100}%)`);
+
+      // Convert each detection to a tile (each detection is one half of a domino)
+      const tiles: DetectedTile[] = highConfidencePredictions.map(pred => {
+        // Parse pip count from class name (e.g., "pip-11" -> 11)
+        const pips = parseInt(pred.class.replace('pip-', ''));
+        
+        const boundingBox: BoundingBox = {
+          x: pred.x - pred.width / 2,
+          y: pred.y - pred.height / 2,
+          width: pred.width,
+          height: pred.height,
+          rotation: 0,
+        };
+
+        return {
+          id: uuidv4(),
+          boundingBox,
+          leftPips: pips,
+          rightPips: 0, // Each detection is one half
+          totalPips: pips,
+          confidence: pred.confidence,
+        };
+      });
+
+      console.log(`Converted to ${tiles.length} tiles`);
       console.log('Detected tiles:', tiles);
 
       // Calculate total score

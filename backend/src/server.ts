@@ -10,6 +10,7 @@ import gamesRoutes from './routes/games';
 import roundsRoutes from './routes/rounds';
 import reportsRoutes from './routes/reports';
 import syncRoutes from './routes/sync';
+import debugRoutes from './routes/debug';
 
 // Load environment variables
 dotenv.config();
@@ -17,7 +18,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 const DATABASE_URL = process.env.DATABASE_URL;
-const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:5173';
+const CORS_ORIGIN = process.env.CORS_ORIGIN || '*'; // Allow all origins in production
 
 if (!DATABASE_URL) {
   console.error('DATABASE_URL environment variable is required');
@@ -46,6 +47,7 @@ app.use('/api/games', gamesRoutes);
 app.use('/api/rounds', roundsRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/sync', syncRoutes);
+app.use('/api/debug', debugRoutes);
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {

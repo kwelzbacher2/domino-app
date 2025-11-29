@@ -78,8 +78,8 @@ export class CustomModelDetector {
    */
   private parseModelOutput(
     outputTensor: tf.Tensor | tf.Tensor[],
-    imageWidth: number,
-    imageHeight: number
+    _imageWidth: number,
+    _imageHeight: number
   ): CustomDetection[] {
     // TODO: Adjust this based on your model's output format
     // Common formats:

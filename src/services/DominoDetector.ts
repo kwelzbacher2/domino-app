@@ -22,7 +22,6 @@
  * - Can potentially detect pip counts directly (end-to-end solution)
  */
 
-import * as tf from '@tensorflow/tfjs';
 import type { DetectedObject } from '@tensorflow-models/coco-ssd';
 import { modelLoader } from './ModelLoader';
 import { imagePreprocessor } from './ImagePreprocessor';

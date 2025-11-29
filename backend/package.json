@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "dev:serverless": "serverless offline",
-    "build": "tsc",
+    "build": "tsc && copy src\\db\\schema.sql dist\\db\\schema.sql",
     "start": "node dist/server.js",
     "migrate": "node dist/migrate.js",
     "deploy": "npm run build && serverless deploy",
@@ -14,24 +14,25 @@
     "logs": "serverless logs -f api -t"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "pg": "^8.11.3",
-    "dotenv": "^16.3.1",
-    "uuid": "^9.0.1",
+    "@aws-sdk/client-secrets-manager": "^3.940.0",
     "@sendgrid/mail": "^8.1.0",
-    "serverless-http": "^3.2.0"
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "pg": "^8.11.3",
+    "serverless-http": "^3.2.0",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "@types/express": "^4.17.21",
     "@types/cors": "^2.8.17",
-    "@types/pg": "^8.10.9",
+    "@types/express": "^4.17.21",
     "@types/node": "^20.10.5",
+    "@types/pg": "^8.10.9",
     "@types/uuid": "^9.0.7",
-    "tsx": "^4.7.0",
-    "typescript": "^5.3.3",
     "serverless": "^3.38.0",
+    "serverless-dotenv-plugin": "^6.0.0",
     "serverless-offline": "^13.3.0",
-    "serverless-dotenv-plugin": "^6.0.0"
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
   }
 }

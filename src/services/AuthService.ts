@@ -106,23 +106,70 @@ export class AuthService {
     const trimmedUsername = username.trim();
     const normalizedUsername = trimmedUsername.toLowerCase();
 
-    // Get all existing users
+    // Get all existing users from local storage
     const users = this.getAllUsers();
 
-    // Check if user already exists (case-insensitive)
+    // Check if user already exists locally
     let user = users.get(normalizedUsername);
 
+    // If user exists locally, still try to sync with backend to ensure they're registered
     if (user) {
-      // Existing user - retrieve and sign in
+      const API_URL = import.meta.env.VITE_API_URL;
+      try {
+        if (API_URL && !API_URL.includes('localhost')) {
+          // Try to register/update in backend (idempotent operation)
+          await fetch(`${API_URL}/auth/signin`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: user.username, userId: user.id }),
+          });
+        }
+      } catch (error) {
+        console.warn('Backend sync failed, continuing with local user:', error);
+      }
+      
       this.currentUser = user;
       this.saveSession(user);
       return user;
     }
 
-    // New user - create
+    // Not in local storage - check backend first, then create if needed
+    const API_URL = import.meta.env.VITE_API_URL;
+    let userId = this.generateUserId();
+    
+    try {
+      if (API_URL && !API_URL.includes('localhost')) {
+        // First, try to get existing user by username
+        const checkResponse = await fetch(`${API_URL}/auth/user/${encodeURIComponent(trimmedUsername)}`);
+        
+        if (checkResponse.ok) {
+          // User exists in backend - use their userId
+          const existingUser = await checkResponse.json();
+          userId = existingUser.id;
+          console.log('Found existing user in backend:', trimmedUsername);
+        } else if (checkResponse.status === 404) {
+          // User doesn't exist - register new user
+          const registerResponse = await fetch(`${API_URL}/auth/signin`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: trimmedUsername, userId }),
+          });
+          
+          if (registerResponse.ok) {
+            const newUser = await registerResponse.json();
+            userId = newUser.id; // Backend now returns 'id' not 'user_id'
+            console.log('Registered new user in backend:', trimmedUsername);
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Backend lookup failed, using offline mode:', error);
+      // Continue with generated userId - offline mode
+    }
+
     user = {
-      id: this.generateUserId(),
-      username: trimmedUsername, // Store with original casing
+      id: userId,
+      username: trimmedUsername,
       createdAt: new Date()
     };
 

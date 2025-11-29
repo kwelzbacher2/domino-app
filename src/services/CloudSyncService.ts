@@ -232,7 +232,11 @@ export class CloudSyncService {
         const cloudRounds = roundsResponse.ok ? await roundsResponse.json() : [];
 
         // Reconstruct game object
-        const players = JSON.parse(cloudGame.players || '[]').map((p: any) => ({
+        // Handle players field - it might be a string or already parsed object
+        const playersData = typeof cloudGame.players === 'string' 
+          ? JSON.parse(cloudGame.players) 
+          : (cloudGame.players || []);
+        const players = playersData.map((p: any) => ({
           id: p.playerId,
           name: p.username,
           totalScore: p.totalScore,
@@ -243,7 +247,9 @@ export class CloudSyncService {
               score: r.score,
               imageDataUrl: r.image_data || '',
               timestamp: new Date(r.timestamp),
-              detectionResult: r.detection_result ? JSON.parse(r.detection_result) : undefined
+              detectionResult: r.detection_result 
+                ? (typeof r.detection_result === 'string' ? JSON.parse(r.detection_result) : r.detection_result)
+                : undefined
             }))
         }));
 

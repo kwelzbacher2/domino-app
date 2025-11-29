@@ -48,25 +48,33 @@ export function SignInScreen({ onSignIn }: SignInScreenProps) {
       // Check if this is a new user or existing user
       const now = new Date();
       const createdRecently = (now.getTime() - user.createdAt.getTime()) < 1000; // Created within last second
-      setIsFirstTime(createdRecently);
       
-      // Register user with cloud backend
+      // Register user with cloud backend and check if they have existing games
+      let hasExistingGames = false;
       try {
         setSyncStatus('Connecting to cloud...');
         await cloudSyncService.registerUser(user);
         
-        // Restore games from cloud for existing users
-        if (!createdRecently) {
-          setSyncStatus('Restoring your games...');
-          await cloudSyncService.restoreGamesFromCloud(user.id);
+        // Always try to restore games from cloud (even for "new" local users)
+        // They might be signing in from a different device
+        setSyncStatus('Checking for saved games...');
+        const restoredGames = await cloudSyncService.restoreGamesFromCloud(user.id);
+        hasExistingGames = restoredGames.length > 0;
+        
+        if (hasExistingGames) {
+          setSyncStatus(`Restored ${restoredGames.length} game${restoredGames.length > 1 ? 's' : ''}!`);
+          await new Promise(resolve => setTimeout(resolve, 1500));
         }
       } catch (cloudError) {
         console.warn('Cloud sync failed, continuing with local storage:', cloudError);
         // Don't block sign-in if cloud sync fails
       }
       
-      // Brief delay to show welcome message for new users
-      if (createdRecently) {
+      // Show welcome message only for truly new users (no existing games)
+      const isNewUser = createdRecently && !hasExistingGames;
+      setIsFirstTime(isNewUser);
+      
+      if (isNewUser) {
         await new Promise(resolve => setTimeout(resolve, 1500));
       }
       
@@ -104,7 +112,7 @@ export function SignInScreen({ onSignIn }: SignInScreenProps) {
     <div className="sign-in-screen">
       <div className="sign-in-container">
         <div className="sign-in-header">
-          <h1 className="app-title">🎲 Domino Score Counter</h1>
+          <h1 className="app-title">Domino Score Counter</h1>
           <p className="app-subtitle">Track your domino game scores with ease</p>
         </div>
 

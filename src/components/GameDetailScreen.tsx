@@ -57,12 +57,24 @@ const RoundItem = memo(function RoundItem({
 // Memoized modal component with lazy image loading
 const RoundModal = memo(function RoundModal({
   round,
+  gameId,
+  game,
   onClose,
+  onDelete,
+  onEdit,
 }: {
   round: RoundHistoryItem;
+  gameId: string;
+  game: Game;
   onClose: () => void;
+  onDelete: () => void;
+  onEdit: (newScore: number) => void;
 }) {
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editScore, setEditScore] = useState(round.score);
+  const [editPlayerId, setEditPlayerId] = useState(round.playerId);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const formatTime = useCallback((date: Date) => {
     return new Date(date).toLocaleTimeString('en-US', {
@@ -70,6 +82,55 @@ const RoundModal = memo(function RoundModal({
       minute: '2-digit',
     });
   }, []);
+
+  const handleDelete = async () => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete Round ${round.roundNumber} for ${round.playerName}? This cannot be undone.`
+    );
+    
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    try {
+      await gameService.deleteRound(gameId, round.playerId, round.roundNumber);
+      onDelete();
+      onClose();
+    } catch (error) {
+      alert(`Failed to delete round: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setIsDeleting(false);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    const scoreChanged = editScore !== round.score;
+    const playerChanged = editPlayerId !== round.playerId;
+
+    if (!scoreChanged && !playerChanged) {
+      setIsEditing(false);
+      return;
+    }
+
+    try {
+      if (playerChanged) {
+        // Reassign to different player (with optional score change)
+        await gameService.reassignRound(
+          gameId,
+          round.playerId,
+          editPlayerId,
+          round.roundNumber,
+          scoreChanged ? editScore : undefined
+        );
+      } else {
+        // Just update score
+        await gameService.updateRoundScore(gameId, round.playerId, round.roundNumber, editScore);
+      }
+      onEdit(editScore);
+      setIsEditing(false);
+      onClose();
+    } catch (error) {
+      alert(`Failed to update round: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
 
   return (
     <div className="round-modal-overlay" onClick={onClose}>
@@ -84,10 +145,37 @@ const RoundModal = memo(function RoundModal({
         <h3>Round {round.roundNumber}</h3>
         <div className="modal-info">
           <p>
-            <strong>Player:</strong> {round.playerName}
+            <strong>Player:</strong>{' '}
+            {isEditing ? (
+              <select
+                value={editPlayerId}
+                onChange={(e) => setEditPlayerId(e.target.value)}
+                className="player-edit-select"
+              >
+                {game.players.map((player) => (
+                  <option key={player.id} value={player.id}>
+                    {player.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              round.playerName
+            )}
           </p>
           <p>
-            <strong>Score:</strong> {round.score}
+            <strong>Score:</strong>{' '}
+            {isEditing ? (
+              <input
+                type="number"
+                min="0"
+                value={editScore}
+                onChange={(e) => setEditScore(parseInt(e.target.value) || 0)}
+                className="score-edit-input"
+                autoFocus
+              />
+            ) : (
+              round.score
+            )}
           </p>
           <p>
             <strong>Time:</strong> {formatTime(round.timestamp)}
@@ -106,6 +194,31 @@ const RoundModal = memo(function RoundModal({
             style={{ display: imageLoaded ? 'block' : 'none' }}
           />
         </div>
+        <div className="modal-actions">
+          {isEditing ? (
+            <>
+              <button onClick={handleSaveEdit} className="button button-primary">
+                Save
+              </button>
+              <button onClick={() => setIsEditing(false)} className="button button-secondary">
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => setIsEditing(true)} className="button button-secondary">
+                ✏️ Edit Score
+              </button>
+              <button 
+                onClick={handleDelete} 
+                className="button button-danger"
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : '🗑️ Delete Round'}
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -118,6 +231,8 @@ export const GameDetailScreen = memo(function GameDetailScreen({ gameId, onBack,
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [isEndingGame, setIsEndingGame] = useState(false);
+  const [isEditingRound, setIsEditingRound] = useState(false);
+  const [editRoundNumber, setEditRoundNumber] = useState(1);
 
   useEffect(() => {
     loadGameData();
@@ -159,6 +274,21 @@ export const GameDetailScreen = memo(function GameDetailScreen({ gameId, onBack,
       setIsEndingGame(false);
     }
   }, [game, gameId]);
+
+  const handleSaveRound = async () => {
+    if (!game || editRoundNumber === game.currentRound) {
+      setIsEditingRound(false);
+      return;
+    }
+
+    try {
+      await gameService.setCurrentRound(gameId, editRoundNumber);
+      await loadGameData();
+      setIsEditingRound(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update round number');
+    }
+  };
 
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -229,7 +359,39 @@ export const GameDetailScreen = memo(function GameDetailScreen({ gameId, onBack,
           </div>
           <div className="status-item">
             <span className="status-label">Current Round:</span>
-            <span className="status-value">{game.currentRound}</span>
+            {isEditingRound ? (
+              <div className="round-edit-controls">
+                <input
+                  type="number"
+                  min="1"
+                  value={editRoundNumber}
+                  onChange={(e) => setEditRoundNumber(parseInt(e.target.value) || 1)}
+                  className="round-edit-input"
+                />
+                <button onClick={handleSaveRound} className="btn-save-round">
+                  ✓
+                </button>
+                <button onClick={() => setIsEditingRound(false)} className="btn-cancel-round">
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <>
+                <span className="status-value">{game.currentRound}</span>
+                {game.status === 'active' && (
+                  <button
+                    onClick={() => {
+                      setIsEditingRound(true);
+                      setEditRoundNumber(game.currentRound);
+                    }}
+                    className="btn-edit-round"
+                    title="Edit round number"
+                  >
+                    ✏️
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </div>
 
@@ -296,10 +458,14 @@ export const GameDetailScreen = memo(function GameDetailScreen({ gameId, onBack,
         )}
       </div>
 
-      {selectedRound && (
+      {selectedRound && game && (
         <RoundModal
           round={selectedRound}
+          gameId={gameId}
+          game={game}
           onClose={() => setSelectedRound(null)}
+          onDelete={loadGameData}
+          onEdit={loadGameData}
         />
       )}
     </div>

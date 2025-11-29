@@ -78,8 +78,10 @@ export class ImageAnnotator {
     const { x, y, width } = tile.boundingBox;
     const { leftPips, rightPips, totalPips } = tile;
 
-    // Format label text
-    const labelText = `${leftPips}|${rightPips} (${totalPips})`;
+    // Format label text - show just the number if it's a single half (rightPips === 0)
+    const labelText = rightPips === 0 
+      ? `${leftPips}` 
+      : `${leftPips}|${rightPips} (${totalPips})`;
 
     // Set font for measuring
     ctx.font = `${ANNOTATION_STYLE.fontWeight} ${ANNOTATION_STYLE.fontSize}px ${ANNOTATION_STYLE.fontFamily}`;

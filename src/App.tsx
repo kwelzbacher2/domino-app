@@ -241,7 +241,7 @@ function AddRoundFlow() {
   }, [loadGame]);
 
   // Handle player selection
-  const handlePlayerSelected = useCallback(async (playerId: string) => {
+  const handlePlayerSelected = useCallback(async (playerId: string, scoreAnother: boolean = false) => {
     if (!detectionResult || !game) return;
 
     try {
@@ -255,7 +255,18 @@ function AddRoundFlow() {
           confidence: detectionResult.confidence,
         }
       );
-      navigate(`/games/${gameId}`);
+      
+      if (scoreAnother) {
+        // Reset to camera for next player in same round
+        setCapturedImage(null);
+        setDetectionResult(null);
+        setCurrentStep('camera');
+        // Reload game to show updated scores
+        const updatedGame = await gameService.getGame(gameId);
+        setGame(updatedGame);
+      } else {
+        navigate(`/games/${gameId}`);
+      }
     } catch (error) {
       console.error('Failed to save round score:', error);
     }

@@ -24,7 +24,7 @@ export const HelpScreen = memo(function HelpScreen({ onBack, onGetStarted }: Hel
 
       <div className="help-content">
         <section className="help-section">
-          <div className="help-icon">🎲</div>
+          <div className="help-icon">📱</div>
           <h2>Welcome to Domino Score Counter!</h2>
           <p>This app automatically counts the pips on your dominoes so you don't have to. Just take a photo and let the app do the math!</p>
         </section>

@@ -203,7 +203,7 @@ Resources:
       DBInstanceIdentifier: !Sub ${AWS::StackName}-db
       DBName: dominodb
       Engine: postgres
-      EngineVersion: '15.4'
+      EngineVersion: '15.15'
       DBInstanceClass: db.t3.micro  # Free tier eligible
       AllocatedStorage: 20
       StorageType: gp2
@@ -213,7 +213,7 @@ Resources:
         - !Ref RDSSecurityGroup
       DBSubnetGroupName: !Ref DBSubnetGroup
       PubliclyAccessible: false
-      BackupRetentionPeriod: 7
+      BackupRetentionPeriod: 1
       PreferredBackupWindow: '03:00-04:00'
       PreferredMaintenanceWindow: 'sun:04:00-sun:05:00'
       Tags:
@@ -269,84 +269,8 @@ Resources:
           "dbname": "dominodb"
         }
 
-  # ==================== Lambda Function ====================
-  ApiFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-api
-      Runtime: nodejs18.x
-      Handler: lambda.handler
-      Role: !GetAtt LambdaExecutionRole.Arn
-      Code:
-        ZipFile: |
-          exports.handler = async (event) => {
-            return {
-              statusCode: 200,
-              body: JSON.stringify({ message: 'Placeholder - deploy with serverless' })
-            };
-          };
-      Timeout: 30
-      MemorySize: 512
-      Environment:
-        Variables:
-          NODE_ENV: !Ref Environment
-          DB_SECRET_ARN: !Ref DBSecret
-      VpcConfig:
-        SecurityGroupIds:
-          - !Ref LambdaSecurityGroup
-        SubnetIds:
-          - !Ref PrivateSubnet1
-          - !Ref PrivateSubnet2
-
-  # ==================== API Gateway ====================
-  ApiGateway:
-    Type: AWS::ApiGatewayV2::Api
-    Properties:
-      Name: !Sub ${AWS::StackName}-api
-      ProtocolType: HTTP
-      CorsConfiguration:
-        AllowOrigins:
-          - '*'
-        AllowMethods:
-          - GET
-          - POST
-          - PUT
-          - DELETE
-          - OPTIONS
-        AllowHeaders:
-          - '*'
-
-  ApiIntegration:
-    Type: AWS::ApiGatewayV2::Integration
-    Properties:
-      ApiId: !Ref ApiGateway
-      IntegrationType: AWS_PROXY
-      IntegrationUri: !GetAtt ApiFunction.Arn
-      PayloadFormatVersion: '2.0'
-
-  ApiRoute:
-    Type: AWS::ApiGatewayV2::Route
-    Properties:
-      ApiId: !Ref ApiGateway
-      RouteKey: 'ANY /{proxy+}'
-      Target: !Sub integrations/${ApiIntegration}
-
-  ApiStage:
-    Type: AWS::ApiGatewayV2::Stage
-    Properties:
-      ApiId: !Ref ApiGateway
-      StageName: !Ref Environment
-      AutoDeploy: true
-
-  LambdaApiPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref ApiFunction
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGateway}/*/*
-
   # ==================== S3 Frontend Bucket ====================
+  # Note: Lambda and API Gateway are managed by Serverless Framework
   FrontendBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -493,12 +417,6 @@ Outputs:
     Export:
       Name: !Sub ${AWS::StackName}-DBSecret
 
-  ApiEndpoint:
-    Description: API Gateway Endpoint
-    Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
-    Export:
-      Name: !Sub ${AWS::StackName}-ApiEndpoint
-
   FrontendBucketName:
     Description: Frontend S3 Bucket Name
     Value: !Ref FrontendBucket
@@ -519,8 +437,4 @@ Outputs:
     Export:
       Name: !Sub ${AWS::StackName}-CloudFrontDistributionId
 
-  LambdaFunctionArn:
-    Description: Lambda Function ARN
-    Value: !GetAtt ApiFunction.Arn
-    Export:
-      Name: !Sub ${AWS::StackName}-LambdaArn
+

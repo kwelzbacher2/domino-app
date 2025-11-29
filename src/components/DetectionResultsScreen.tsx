@@ -106,9 +106,15 @@ export const DetectionResultsScreen = memo(function DetectionResultsScreen({
                   type="button"
                 >
                   <div className="tile-pips">
-                    <span className="pip-value">{tile.leftPips}</span>
-                    <span className="pip-separator">|</span>
-                    <span className="pip-value">{tile.rightPips}</span>
+                    {tile.rightPips === 0 ? (
+                      <span className="pip-value">{tile.leftPips}</span>
+                    ) : (
+                      <>
+                        <span className="pip-value">{tile.leftPips}</span>
+                        <span className="pip-separator">|</span>
+                        <span className="pip-value">{tile.rightPips}</span>
+                      </>
+                    )}
                   </div>
                   <div className="tile-score">
                     Score: <strong>{tile.totalPips}</strong>
@@ -181,29 +187,46 @@ export const DetectionResultsScreen = memo(function DetectionResultsScreen({
             
             <div className="tile-detail-visual">
               <div className="domino-visual">
-                <div className="domino-half">
-                  <span className="domino-pips">{selectedTile.leftPips}</span>
-                </div>
-                <div className="domino-divider"></div>
-                <div className="domino-half">
-                  <span className="domino-pips">{selectedTile.rightPips}</span>
-                </div>
+                {selectedTile.rightPips === 0 ? (
+                  <div className="domino-half-single">
+                    <span className="domino-pips">{selectedTile.leftPips}</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="domino-half">
+                      <span className="domino-pips">{selectedTile.leftPips}</span>
+                    </div>
+                    <div className="domino-divider"></div>
+                    <div className="domino-half">
+                      <span className="domino-pips">{selectedTile.rightPips}</span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
             <div className="tile-detail-info">
-              <div className="detail-row">
-                <span className="detail-label">Left Pips:</span>
-                <span className="detail-value">{selectedTile.leftPips}</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Right Pips:</span>
-                <span className="detail-value">{selectedTile.rightPips}</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Total Score:</span>
-                <span className="detail-value total">{selectedTile.totalPips}</span>
-              </div>
+              {selectedTile.rightPips === 0 ? (
+                <div className="detail-row">
+                  <span className="detail-label">Pip Count:</span>
+                  <span className="detail-value">{selectedTile.leftPips}</span>
+                </div>
+              ) : (
+                <>
+                  <div className="detail-row">
+                    <span className="detail-label">Left Pips:</span>
+                    <span className="detail-value">{selectedTile.leftPips}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Right Pips:</span>
+                    <span className="detail-value">{selectedTile.rightPips}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Total Score:</span>
+                    <span className="detail-value total">{selectedTile.totalPips}</span>
+                  </div>
+                </>
+              )}
               <div className="detail-row">
                 <span className="detail-label">Confidence:</span>
                 <span className={`detail-value ${getConfidenceClass(selectedTile.confidence)}`}>

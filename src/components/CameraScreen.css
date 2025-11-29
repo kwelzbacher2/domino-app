@@ -59,6 +59,7 @@
   display: flex;
   flex-direction: column;
   position: relative;
+  min-height: 0; /* Allow flex shrinking */
 }
 
 .camera-viewfinder {
@@ -131,6 +132,7 @@
   justify-content: center;
   gap: 2rem;
   padding: 2rem 1rem;
+  padding-bottom: max(2rem, env(safe-area-inset-bottom));
   background: rgba(0, 0, 0, 0.8);
 }
 
@@ -410,6 +412,7 @@
   .camera-controls {
     gap: 1rem;
     padding: 1rem;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
 
   .btn-upload {
@@ -418,8 +421,7 @@
   }
 
   .camera-tips {
-    font-size: 0.75rem;
-    padding: 0.5rem;
+    display: none; /* Hide tips on small screens to prevent button cutoff */
   }
 
   .button-group {

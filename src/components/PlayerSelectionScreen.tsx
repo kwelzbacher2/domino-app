@@ -10,7 +10,7 @@ interface PlayerSelectionScreenProps {
   game: Game;
   roundScore: number;
   imageDataUrl: string;
-  onPlayerSelected: (playerId: string) => void;
+  onPlayerSelected: (playerId: string, scoreAnother?: boolean) => Promise<void>;
   onCancel?: () => void;
 }
 
@@ -22,14 +22,23 @@ export function PlayerSelectionScreen({
   onCancel,
 }: PlayerSelectionScreenProps) {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string>('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const handlePlayerSelect = (playerId: string) => {
-    setSelectedPlayerId(playerId);
+    if (!isSaving) {
+      setSelectedPlayerId(playerId);
+    }
   };
 
-  const handleConfirm = () => {
-    if (selectedPlayerId) {
-      onPlayerSelected(selectedPlayerId);
+  const handleConfirm = async (scoreAnother: boolean = false) => {
+    if (selectedPlayerId && !isSaving) {
+      setIsSaving(true);
+      try {
+        await onPlayerSelected(selectedPlayerId, scoreAnother);
+      } catch (error) {
+        // If there's an error, re-enable the buttons
+        setIsSaving(false);
+      }
     }
   };
 
@@ -91,17 +100,26 @@ export function PlayerSelectionScreen({
               type="button"
               onClick={onCancel}
               className="button button-secondary"
+              disabled={isSaving}
             >
               Cancel
             </button>
           )}
           <button
             type="button"
-            onClick={handleConfirm}
-            className="button button-primary"
-            disabled={!selectedPlayerId}
+            onClick={() => handleConfirm(true)}
+            className="button button-secondary"
+            disabled={!selectedPlayerId || isSaving}
           >
-            Confirm
+            {isSaving ? 'Saving...' : '✓ Save & Score Another Player'}
+          </button>
+          <button
+            type="button"
+            onClick={() => handleConfirm(false)}
+            className="button button-primary"
+            disabled={!selectedPlayerId || isSaving}
+          >
+            {isSaving ? 'Saving...' : '✓ Save & Finish Round'}
           </button>
         </div>
       </div>

@@ -232,6 +232,152 @@ export class GameService {
 
     return rounds;
   }
+
+  /**
+   * Delete a specific round for a player
+   */
+  async deleteRound(gameId: string, playerId: string, roundNumber: number): Promise<void> {
+    const game = await this.getGame(gameId);
+
+    // Find the player
+    const player = game.players.find((p) => p.id === playerId);
+    if (!player) {
+      throw new Error(`Player not found: ${playerId}`);
+    }
+
+    // Find the round
+    const roundIndex = player.rounds.findIndex((r) => r.roundNumber === roundNumber);
+    if (roundIndex === -1) {
+      throw new Error(`Round ${roundNumber} not found for player ${player.name}`);
+    }
+
+    // Get the round score before removing
+    const roundScore = player.rounds[roundIndex].score;
+
+    // Remove the round
+    player.rounds.splice(roundIndex, 1);
+
+    // Update player's total score
+    player.totalScore -= roundScore;
+
+    // Save updated game
+    await this.storage.saveGame(game);
+    
+    // Sync to cloud
+    await this.syncToCloud(game);
+  }
+
+  /**
+   * Update the score for a specific round
+   */
+  async updateRoundScore(
+    gameId: string,
+    playerId: string,
+    roundNumber: number,
+    newScore: number
+  ): Promise<void> {
+    const game = await this.getGame(gameId);
+
+    // Find the player
+    const player = game.players.find((p) => p.id === playerId);
+    if (!player) {
+      throw new Error(`Player not found: ${playerId}`);
+    }
+
+    // Find the round
+    const round = player.rounds.find((r) => r.roundNumber === roundNumber);
+    if (!round) {
+      throw new Error(`Round ${roundNumber} not found for player ${player.name}`);
+    }
+
+    // Calculate score difference
+    const scoreDiff = newScore - round.score;
+
+    // Update round score
+    round.score = newScore;
+
+    // Update player's total score
+    player.totalScore += scoreDiff;
+
+    // Save updated game
+    await this.storage.saveGame(game);
+    
+    // Sync to cloud
+    await this.syncToCloud(game);
+  }
+
+  /**
+   * Reassign a round to a different player (useful for correcting mistakes)
+   */
+  async reassignRound(
+    gameId: string,
+    oldPlayerId: string,
+    newPlayerId: string,
+    roundNumber: number,
+    newScore?: number
+  ): Promise<void> {
+    const game = await this.getGame(gameId);
+
+    // Find both players
+    const oldPlayer = game.players.find((p) => p.id === oldPlayerId);
+    const newPlayer = game.players.find((p) => p.id === newPlayerId);
+    
+    if (!oldPlayer) {
+      throw new Error(`Old player not found: ${oldPlayerId}`);
+    }
+    if (!newPlayer) {
+      throw new Error(`New player not found: ${newPlayerId}`);
+    }
+
+    // Find the round
+    const roundIndex = oldPlayer.rounds.findIndex((r) => r.roundNumber === roundNumber);
+    if (roundIndex === -1) {
+      throw new Error(`Round ${roundNumber} not found for player ${oldPlayer.name}`);
+    }
+
+    // Get the round
+    const round = oldPlayer.rounds[roundIndex];
+    const oldScore = round.score;
+    const finalScore = newScore !== undefined ? newScore : oldScore;
+
+    // Remove from old player
+    oldPlayer.rounds.splice(roundIndex, 1);
+    oldPlayer.totalScore -= oldScore;
+
+    // Update score if changed
+    if (newScore !== undefined) {
+      round.score = newScore;
+    }
+
+    // Add to new player
+    newPlayer.rounds.push(round);
+    newPlayer.totalScore += finalScore;
+
+    // Save updated game
+    await this.storage.saveGame(game);
+    
+    // Sync to cloud
+    await this.syncToCloud(game);
+  }
+
+  /**
+   * Set the current round number (useful for fixing round counter after deletions)
+   */
+  async setCurrentRound(gameId: string, roundNumber: number): Promise<void> {
+    const game = await this.getGame(gameId);
+
+    if (roundNumber < 1) {
+      throw new Error('Round number must be at least 1');
+    }
+
+    game.currentRound = roundNumber;
+
+    // Save updated game
+    await this.storage.saveGame(game);
+    
+    // Sync to cloud
+    await this.syncToCloud(game);
+  }
 }
 
 // Export a singleton instance with the storage repository and cloud sync

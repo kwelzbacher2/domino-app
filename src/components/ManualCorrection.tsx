@@ -30,8 +30,8 @@ export const ManualCorrection: React.FC<ManualCorrectionProps> = ({
   const [tiles, setTiles] = useState<DetectedTile[]>(detectionResult.tiles);
   const [editingTileId, setEditingTileId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newTileLeft, setNewTileLeft] = useState(0);
-  const [newTileRight, setNewTileRight] = useState(0);
+  const [newTileLeft, setNewTileLeft] = useState<number | string>(0);
+  const [newTileRight, setNewTileRight] = useState<number | string>(0);
   const [reportStatus, setReportStatus] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
   const [showReportNotification, setShowReportNotification] = useState(false);
   
@@ -40,7 +40,9 @@ export const ManualCorrection: React.FC<ManualCorrectionProps> = ({
   const totalScore = correctionService.calculateTotalScore(tiles);
 
   const handleAddTile = () => {
-    const updatedTiles = correctionService.addTile(tiles, newTileLeft, newTileRight);
+    const left = newTileLeft === '' ? 0 : Number(newTileLeft);
+    const right = newTileRight === '' ? 0 : Number(newTileRight);
+    const updatedTiles = correctionService.addTile(tiles, left, right);
     setTiles(updatedTiles);
     setNewTileLeft(0);
     setNewTileRight(0);
@@ -118,49 +120,51 @@ export const ManualCorrection: React.FC<ManualCorrectionProps> = ({
       )}
 
       <div className="tiles-list">
-        <h3>Detected Tiles ({tiles.length})</h3>
-        {tiles.map((tile) => (
-          <div key={tile.id} className="tile-item">
-            {editingTileId === tile.id ? (
-              <TileEditor
-                tile={tile}
-                onSave={(left, right) => handleUpdateTile(tile.id, left, right)}
-                onCancel={() => setEditingTileId(null)}
-              />
-            ) : (
-              <TileDisplay
-                tile={tile}
-                onEdit={() => setEditingTileId(tile.id)}
-                onRemove={() => handleRemoveTile(tile.id)}
-              />
-            )}
+        <h3>Detected Dominoes ({tiles.length})</h3>
+        <p className="tiles-help">Click "Edit" to correct individual pip counts</p>
+        {tiles.length === 0 ? (
+          <div className="no-tiles">
+            <p>No dominoes detected. Click "Add Missing Tile" below to add them manually.</p>
           </div>
-        ))}
+        ) : (
+          tiles.map((tile, index) => (
+            <div key={tile.id} className="tile-item">
+              <div className="tile-number">#{index + 1}</div>
+              {editingTileId === tile.id ? (
+                <TileEditor
+                  tile={tile}
+                  onSave={(left, right) => handleUpdateTile(tile.id, left, right)}
+                  onCancel={() => setEditingTileId(null)}
+                />
+              ) : (
+                <TileDisplay
+                  tile={tile}
+                  onEdit={() => setEditingTileId(tile.id)}
+                  onRemove={() => handleRemoveTile(tile.id)}
+                />
+              )}
+            </div>
+          ))
+        )}
       </div>
 
       <div className="add-tile-section">
         {showAddForm ? (
           <div className="add-tile-form">
-            <h3>Add New Tile</h3>
+            <h3>Add Missing Tile</h3>
             <div className="pip-inputs">
               <label>
-                Left Pips:
+                Pip Count:
                 <input
                   type="number"
                   min="0"
                   max="12"
                   value={newTileLeft}
-                  onChange={(e) => setNewTileLeft(parseInt(e.target.value) || 0)}
-                />
-              </label>
-              <label>
-                Right Pips:
-                <input
-                  type="number"
-                  min="0"
-                  max="12"
-                  value={newTileRight}
-                  onChange={(e) => setNewTileRight(parseInt(e.target.value) || 0)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setNewTileLeft(val === '' ? 0 : parseInt(val));
+                  }}
+                  onFocus={(e) => e.target.select()}
                 />
               </label>
             </div>
@@ -202,20 +206,32 @@ const TileDisplay: React.FC<TileDisplayProps> = ({ tile, onEdit, onRemove }) => 
   return (
     <div className="tile-display">
       <div className="tile-info">
-        <span className="tile-pips">
-          [{tile.leftPips}|{tile.rightPips}]
-        </span>
-        <span className="tile-total">Total: {tile.totalPips}</span>
+        <div className="tile-pips-display">
+          {tile.rightPips === 0 ? (
+            <>
+              <span className="pip-value">{tile.leftPips}</span>
+              <span className="pip-label"> pips</span>
+            </>
+          ) : (
+            <>
+              <span className="pip-value">{tile.leftPips}</span>
+              <span className="pip-separator">|</span>
+              <span className="pip-value">{tile.rightPips}</span>
+              <span className="pip-equals">=</span>
+              <span className="pip-total">{tile.totalPips}</span>
+            </>
+          )}
+        </div>
         <span className="tile-confidence">
-          Confidence: {(tile.confidence * 100).toFixed(0)}%
+          {(tile.confidence * 100).toFixed(0)}% confident
         </span>
       </div>
       <div className="tile-actions">
         <button onClick={onEdit} className="btn-edit" aria-label="Edit tile">
-          Edit
+          ✏️ Edit
         </button>
         <button onClick={onRemove} className="btn-remove" aria-label="Remove tile">
-          Remove
+          🗑️ Remove
         </button>
       </div>
     </div>
@@ -229,36 +245,67 @@ interface TileEditorProps {
 }
 
 const TileEditor: React.FC<TileEditorProps> = ({ tile, onSave, onCancel }) => {
-  const [leftPips, setLeftPips] = useState(tile.leftPips);
-  const [rightPips, setRightPips] = useState(tile.rightPips);
+  const [leftPips, setLeftPips] = useState<number | string>(tile.leftPips);
+  const [rightPips, setRightPips] = useState<number | string>(tile.rightPips);
+  const [isSingleHalf, setIsSingleHalf] = useState(tile.rightPips === 0);
 
   const handleSave = () => {
-    onSave(leftPips, rightPips);
+    const left = leftPips === '' ? 0 : Number(leftPips);
+    const right = rightPips === '' ? 0 : Number(rightPips);
+    onSave(left, isSingleHalf ? 0 : right);
   };
 
   return (
     <div className="tile-editor">
+      <div className="editor-mode-toggle">
+        <label>
+          <input
+            type="checkbox"
+            checked={isSingleHalf}
+            onChange={(e) => setIsSingleHalf(e.target.checked)}
+          />
+          Single half (not full domino)
+        </label>
+      </div>
       <div className="pip-inputs">
-        <label>
-          Left:
-          <input
-            type="number"
-            min="0"
-            max="12"
-            value={leftPips}
-            onChange={(e) => setLeftPips(parseInt(e.target.value) || 0)}
-          />
-        </label>
-        <label>
-          Right:
-          <input
-            type="number"
-            min="0"
-            max="12"
-            value={rightPips}
-            onChange={(e) => setRightPips(parseInt(e.target.value) || 0)}
-          />
-        </label>
+        {isSingleHalf ? (
+          <label>
+            Pip Count:
+            <input
+              type="number"
+              min="0"
+              max="12"
+              value={leftPips}
+              onChange={(e) => setLeftPips(e.target.value)}
+              onFocus={(e) => e.target.select()}
+            />
+          </label>
+        ) : (
+          <>
+            <label>
+              Left:
+              <input
+                type="number"
+                min="0"
+                max="12"
+                value={leftPips}
+                onChange={(e) => setLeftPips(e.target.value)}
+                onFocus={(e) => e.target.select()}
+              />
+            </label>
+            <label>
+              Right:
+              <input
+                type="number"
+                min="0"
+                max="12"
+                value={rightPips}
+                onChange={(e) => setRightPips(e.target.value)}
+                onFocus={(e) => e.target.select()}
+              />
+            </label>
+          </>
+        )}
       </div>
       <div className="editor-actions">
         <button onClick={handleSave} className="btn-save-edit">

@@ -5,16 +5,12 @@ frameworkVersion: '3'
 provider:
   name: aws
   runtime: nodejs18.x
-  region: us-east-1  # Change to your preferred region
+  region: us-east-1
   stage: ${opt:stage, 'dev'}
-  
-  # Use existing CloudFormation stack resources
-  stackName: domino-app-${self:provider.stage}
   
   environment:
     NODE_ENV: ${self:provider.stage}
-    DB_SECRET_ARN: 
-      Fn::ImportValue: ${self:provider.stackName}-DBSecret
+    DATABASE_URL: postgresql://dominoadmin:MyDominoApp2025@domino-app-dev-db.csbsigeuqas0.us-east-1.rds.amazonaws.com:5432/dominodb?sslmode=require
     SENDGRID_API_KEY: ${env:SENDGRID_API_KEY, ''}
     DEVELOPER_EMAIL: ${env:DEVELOPER_EMAIL, ''}
     FROM_EMAIL: ${env:FROM_EMAIL, ''}
@@ -27,7 +23,7 @@ provider:
           Action:
             - secretsmanager:GetSecretValue
           Resource:
-            Fn::ImportValue: ${self:provider.stackName}-DBSecret
+            Fn::ImportValue: domino-app-${self:provider.stage}-DBSecret
         - Effect: Allow
           Action:
             - rds:DescribeDBInstances
@@ -36,7 +32,7 @@ provider:
 functions:
   api:
     handler: dist/lambda.handler
-    timeout: 30
+    timeout: 60
     memorySize: 512
     events:
       - httpApi:
@@ -48,10 +44,22 @@ functions:
     # Use VPC from CloudFormation
     vpc:
       securityGroupIds:
-        - Fn::ImportValue: ${self:provider.stackName}-LambdaSG
+        - Fn::ImportValue: domino-app-${self:provider.stage}-LambdaSG
       subnetIds:
-        - Fn::ImportValue: ${self:provider.stackName}-PrivateSubnet1
-        - Fn::ImportValue: ${self:provider.stackName}-PrivateSubnet2
+        - Fn::ImportValue: domino-app-${self:provider.stage}-PrivateSubnet1
+        - Fn::ImportValue: domino-app-${self:provider.stage}-PrivateSubnet2
+  
+  migrate:
+    handler: dist/migrate-lambda.handler
+    timeout: 60
+    memorySize: 512
+    # Use VPC from CloudFormation
+    vpc:
+      securityGroupIds:
+        - Fn::ImportValue: domino-app-${self:provider.stage}-LambdaSG
+      subnetIds:
+        - Fn::ImportValue: domino-app-${self:provider.stage}-PrivateSubnet1
+        - Fn::ImportValue: domino-app-${self:provider.stage}-PrivateSubnet2
 
 plugins:
   - serverless-offline
@@ -60,11 +68,13 @@ plugins:
 # Package configuration
 package:
   patterns:
-    - '!node_modules/**'
     - '!src/**'
     - '!.env*'
     - '!*.md'
+    - '!test/**'
+    - '!*.test.ts'
     - 'dist/**'
+    - 'node_modules/**'
 
 custom:
   serverless-offline:
