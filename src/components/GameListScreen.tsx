@@ -19,17 +19,20 @@ export const GameListScreen = memo(function GameListScreen({ onGameSelect, onCre
   const [games, setGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
 
   useEffect(() => {
     loadGames();
-  }, []);
+  }, [activeTab]);
 
   const loadGames = async () => {
     setIsLoading(true);
     setError('');
     try {
-      const activeGames = await gameService.listActiveGames();
-      setGames(activeGames);
+      const loadedGames = activeTab === 'active' 
+        ? await gameService.listActiveGames()
+        : await gameService.listCompletedGames();
+      setGames(loadedGames);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load games');
     } finally {
@@ -99,6 +102,23 @@ export const GameListScreen = memo(function GameListScreen({ onGameSelect, onCre
           </div>
         </header>
 
+        <div className="game-tabs">
+          <button
+            type="button"
+            onClick={() => setActiveTab('active')}
+            className={`tab-button ${activeTab === 'active' ? 'active' : ''}`}
+          >
+            Active Games
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('completed')}
+            className={`tab-button ${activeTab === 'completed' ? 'active' : ''}`}
+          >
+            Completed Games
+          </button>
+        </div>
+
         <SyncStatusIndicator />
 
         {error && (
@@ -130,15 +150,17 @@ export const GameListScreen = memo(function GameListScreen({ onGameSelect, onCre
               <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
               <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
             </svg>
-            <h2>No Active Games</h2>
-            <p>Create a new game to get started!</p>
-            <button
-              type="button"
-              onClick={onCreateGame}
-              className="button button-primary"
-            >
-              Create Your First Game
-            </button>
+            <h2>{activeTab === 'active' ? 'No Active Games' : 'No Completed Games'}</h2>
+            <p>{activeTab === 'active' ? 'Create a new game to get started!' : 'Complete a game to see it here.'}</p>
+            {activeTab === 'active' && (
+              <button
+                type="button"
+                onClick={onCreateGame}
+                className="button button-primary"
+              >
+                Create Your First Game
+              </button>
+            )}
           </div>
         ) : (
           <div className="games-grid">

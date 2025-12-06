@@ -253,7 +253,8 @@ function AddRoundFlow() {
         {
           tilesDetected: detectionResult.tiles.length,
           confidence: detectionResult.confidence,
-        }
+        },
+        !scoreAnother // Only increment round when NOT scoring another player
       );
       
       if (scoreAnother) {

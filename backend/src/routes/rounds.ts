@@ -9,14 +9,15 @@ const router = Router();
 
 /**
  * GET /api/rounds/:gameId
- * Get all rounds for a game
+ * Get all rounds for a game (without image data to reduce payload size)
  */
 router.get('/:gameId', async (req: Request, res: Response) => {
   try {
     const { gameId } = req.params;
 
     const result = await query<CloudRound>(
-      `SELECT * FROM cloud_rounds 
+      `SELECT round_id, game_id, player_id, round_number, score, timestamp, detection_result
+       FROM cloud_rounds 
        WHERE game_id = $1 
        ORDER BY round_number ASC`,
       [gameId]
@@ -54,6 +55,11 @@ router.post('/', async (req: Request, res: Response) => {
       `INSERT INTO cloud_rounds 
        (round_id, game_id, player_id, round_number, score, image_data, timestamp, detection_result)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT (round_id) DO UPDATE SET
+         score = EXCLUDED.score,
+         image_data = EXCLUDED.image_data,
+         timestamp = EXCLUDED.timestamp,
+         detection_result = EXCLUDED.detection_result
        RETURNING *`,
       [
         roundId,

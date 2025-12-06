@@ -20,6 +20,9 @@ export function initDatabase(connectionString: string): Pool {
     max: 20,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 2000,
+    ssl: {
+      rejectUnauthorized: false, // Accept RDS self-signed certificates
+    },
   });
 
   pool.on('error', (err) => {

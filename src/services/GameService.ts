@@ -93,6 +93,13 @@ export class GameService {
   }
 
   /**
+   * List all completed games
+   */
+  async listCompletedGames(): Promise<Game[]> {
+    return await this.storage.getCompletedGames();
+  }
+
+  /**
    * Add a round score for a player and progress to next round
    * Requirements: 8.1, 8.2, 8.3, 8.4
    */
@@ -105,7 +112,8 @@ export class GameService {
       tilesDetected: number;
       confidence: number;
       manualCorrections?: any[];
-    }
+    },
+    incrementRound: boolean = true
   ): Promise<void> {
     const game = await this.getGame(gameId);
 
@@ -135,8 +143,10 @@ export class GameService {
     // Save round to storage
     await this.storage.saveRound(gameId, playerId, roundScore);
 
-    // Increment round number
-    game.currentRound += 1;
+    // Only increment round number if requested (when finishing the round)
+    if (incrementRound) {
+      game.currentRound += 1;
+    }
 
     // Save updated game
     await this.storage.saveGame(game);

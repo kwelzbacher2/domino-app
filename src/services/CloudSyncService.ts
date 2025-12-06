@@ -245,7 +245,7 @@ export class CloudSyncService {
             .map((r: any) => ({
               roundNumber: r.round_number,
               score: r.score,
-              imageDataUrl: r.image_data || '',
+              imageDataUrl: '', // Images not returned from API to reduce payload size
               timestamp: new Date(r.timestamp),
               detectionResult: r.detection_result 
                 ? (typeof r.detection_result === 'string' ? JSON.parse(r.detection_result) : r.detection_result)

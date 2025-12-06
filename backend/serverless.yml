@@ -4,7 +4,7 @@ frameworkVersion: '3'
 
 provider:
   name: aws
-  runtime: nodejs18.x
+  runtime: nodejs20.x
   region: us-east-1
   stage: ${opt:stage, 'dev'}
   
@@ -14,6 +14,7 @@ provider:
     SENDGRID_API_KEY: ${env:SENDGRID_API_KEY, ''}
     DEVELOPER_EMAIL: ${env:DEVELOPER_EMAIL, ''}
     FROM_EMAIL: ${env:FROM_EMAIL, ''}
+    NODE_TLS_REJECT_UNAUTHORIZED: '0'
   
   # Use IAM role from CloudFormation
   iam:

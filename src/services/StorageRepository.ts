@@ -257,6 +257,15 @@ export class StorageRepository {
     const allGames = await this.getAllGames();
     return allGames.filter(game => game.status === 'active');
   }
+
+  /**
+   * Get all completed games
+   */
+  async getCompletedGames(): Promise<Game[]> {
+    await this.initialize();
+    const allGames = await this.getAllGames();
+    return allGames.filter(game => game.status === 'completed');
+  }
 }
 
 // Export a singleton instance

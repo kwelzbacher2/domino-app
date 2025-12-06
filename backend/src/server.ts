@@ -30,8 +30,10 @@ initDatabase(DATABASE_URL);
 
 // Middleware
 app.use(cors({
-  origin: CORS_ORIGIN,
-  credentials: true
+  origin: CORS_ORIGIN === '*' ? true : CORS_ORIGIN, // Use 'true' to reflect request origin when using '*'
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json({ limit: '50mb' })); // Support large base64 images
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -52,6 +54,13 @@ app.use('/api/debug', debugRoutes);
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Unhandled error:', err);
+  
+  // Ensure CORS headers are present even on errors
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
   res.status(500).json({ error: 'Internal server error' });
 });
 
